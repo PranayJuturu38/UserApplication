@@ -18,29 +18,43 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @Service
 public class FileServiceImpl implements FileService {
 
 
     private static final String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    LocalDateTime now = LocalDateTime.now();
+    String fileName = "modifiedFile"+dtf.format(now)+"xlsx";
     @Override
     public FileData uploadFile(MultipartFile userFile) throws IOException {
-        if (TYPE.equals(userFile.getContentType())) {
-            String fileName = StringUtils.cleanPath(userFile.getOriginalFilename());
-            FileData FileData = new FileData(fileName, userFile.getContentType(), userFile.getBytes());
-            return FileData;
-        } else {
-            throw new CustomException("File type not supported!!");
+        try {
+            if (TYPE.equals(userFile.getContentType())) {
+                String fileName = StringUtils.cleanPath(userFile.getOriginalFilename());
+                FileData FileData = new FileData(fileName, userFile.getContentType(), userFile.getBytes());
+                return FileData;
+            }
+            else{
+                throw new CustomException("File type is not supported");
+            }
+        } catch (Exception uploadException) {
+            throw new CustomException("File type is not supported");
         }
-
     }
 
     @Override
-    public ResponseEntity<Message> modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException {
+    public MultipartFile modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException {
         String message = " ";
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+        LocalDateTime now = LocalDateTime.now();
+        String fileName = dtf.format(now)+"_"+"modifiedFile.xlsx";
         try {
+
             InputStream is = userFile.getInputStream();
 
             Workbook workbook = WorkbookFactory.create(is);
@@ -56,9 +70,10 @@ public class FileServiceImpl implements FileService {
 
             //Column heading
             Row rowHeading = sheet.getRow(0);
-            Cell cellHeading = rowHeading.getCell(3);
-            if (cellHeading == null) {
-                cellHeading = rowHeading.createCell(3);
+            int lastCellNumber = rowHeading.getLastCellNum();
+            Cell cellHeading = rowHeading.getCell(lastCellNumber);
+            if (cellHeading == null) { //auto increment
+                cellHeading = rowHeading.createCell(lastCellNumber);
             }
             cellHeading.setCellValue("UniqueID");
             cellHeading.setCellStyle(cellStyle);
@@ -66,9 +81,12 @@ public class FileServiceImpl implements FileService {
             //Creating a column
             for (int i = 1; i < totalRows; i++) {
                 Row row = sheet.getRow(i);
-                Cell cell = row.getCell(3);
+                Cell cell = row.getCell(lastCellNumber);
                 if (cell == null) {
-                    cell = row.createCell(3);
+                    cell = row.createCell(lastCellNumber);
+                }
+                else{
+                    i++;
                 }
                 Cell name = row.getCell(0);
                 Cell contactNo = row.getCell(2);
@@ -76,29 +94,33 @@ public class FileServiceImpl implements FileService {
                 String uniqueNumber = contactNo.toString().substring(0, 3);
 
                 cell.setCellValue(uniqueName + uniqueNumber);
-            }
+            }//Modified + date and time
             FileOutputStream outputStream = new FileOutputStream("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-            workbook.write(outputStream);
+            workbook.write(outputStream);;
 
-            message = "File modified";
-            return ResponseEntity.status(HttpStatus.OK).body(new Message(message));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body(new Message(message));
+        } catch (Exception modificationException) {
+            modificationException.printStackTrace();
+            throw new CustomException("File cannot be modified");
         }
+
+        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
+        FileInputStream input = new FileInputStream(file);
+        MultipartFile multipartFile = new MockMultipartFile("multiPartFile",
+                file.getName(), TYPE, IOUtils.toByteArray(input));
+        return multipartFile;
     }
 
     @Override
     public FileData sendFile(MultipartFile userFile) throws IOException {
         //Posting the modified file into the api
-        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-        FileInputStream input = new FileInputStream(file);
-
-        MultipartFile multipartFile = new MockMultipartFile("file",
-                file.getName(), TYPE, IOUtils.toByteArray(input));
+//        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
+//        FileInputStream input = new FileInputStream(file);
+//
+//        MultipartFile multipartFile = new MockMultipartFile("file",
+//                file.getName(), TYPE, IOUtils.toByteArray(input));
 
         LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
-        map.add("file", multipartFile);
+        map.add("file", userFile.getBytes());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);

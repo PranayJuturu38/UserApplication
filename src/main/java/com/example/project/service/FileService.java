@@ -15,7 +15,7 @@ public interface FileService {
 
     FileData uploadFile(MultipartFile userFile) throws IOException;
 
-    ResponseEntity<Message> modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException;
+    MultipartFile modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException;
 
     FileData sendFile(MultipartFile userFile) throws IOException;
 }

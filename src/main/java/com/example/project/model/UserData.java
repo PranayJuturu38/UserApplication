@@ -3,10 +3,8 @@ package com.example.project.model;
 public class UserData {
 
     private String userName;
-    private String password;
     private String email;
     private String contactNo;
-
 
     private String uniqueId;
 
@@ -16,14 +14,6 @@ public class UserData {
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getEmail() {
@@ -50,9 +40,8 @@ public class UserData {
         this.uniqueId = uniqueId;
     }
 
-    public UserData(String userName, String password, String email, String contactNo, String uniqueId) {
+    public UserData(String userName, String email, String contactNo, String uniqueId) {
         this.userName = userName;
-        this.password = password;
         this.email = email;
         this.contactNo = contactNo;
         this.uniqueId = uniqueId;

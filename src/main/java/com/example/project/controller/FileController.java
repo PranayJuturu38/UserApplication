@@ -2,7 +2,11 @@ package com.example.project.controller;
 
 import com.example.project.Messages.CustomException;
 import com.example.project.Messages.Message;
+import com.example.project.Messages.UserException;
+import com.example.project.model.UserData;
 import com.example.project.service.FileService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.catalina.User;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,8 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @RestController
 
@@ -30,39 +40,45 @@ public class FileController {
 
 
     @PostMapping("/upload")
-    public ResponseEntity<Message> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
 
         String message = "";
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy ");
+        LocalDateTime now = LocalDateTime.now();
+        String fileName = dtf.format(now)+"_"+"modifiedFile.xlsx";
         try {
+
             fileService.uploadFile(file);
-            ResponseEntity<Message> modifiedMessage = fileService.modifyFile(file);
-          //  fileService.sendFile(file);
-            File modifiedFile = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-            FileSystemResource value = new FileSystemResource(modifiedFile);
+            fileService.modifyFile(file);
 
-            LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
-            map.add("file", value);
+                 File modifiedFile = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
+                 FileSystemResource value = new FileSystemResource(modifiedFile);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                 LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
+                 map.add("file", value);
 
-            HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(map, headers);
+                 HttpHeaders headers = new HttpHeaders();
+                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
+                 HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(map, headers);
+            try {
+                RestTemplate restTemplate = new RestTemplate();
 
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, String.class);
-            message = "Uploaded the file successfully: " + file.getOriginalFilename();
+                ResponseEntity<Object> response = restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, Object.class);
+                message = response.getBody().toString();
+                message = message.substring(1, message.length() - 1);
 
-            return ResponseEntity.status(HttpStatus.OK).body(new Message(message));
+            } catch (Exception e) {
+                 e.printStackTrace();
+                 message = e.getMessage();
+                return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(message);
+            }
         }
-        catch (Exception e) {
-
-            e.printStackTrace();
-            message = "Cannot upload file :";
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(new Message(message));
-
+        catch (CustomException | InvalidFormatException e) {
+            message = e.getMessage();
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(message);
         }
-
+        return ResponseEntity.status(HttpStatus.OK).body(message);
     }
 
 
