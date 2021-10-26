@@ -10,12 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+
 @Service
 public interface FileService {
 
-    FileData uploadFile(MultipartFile userFile) throws IOException;
+    MultipartFile uploadFile(MultipartFile userFile) throws IOException;
 
     MultipartFile modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException;
 
-    FileData sendFile(MultipartFile userFile) throws IOException;
+   // ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException;
 }

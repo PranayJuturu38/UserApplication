@@ -28,18 +28,18 @@ public class FileServiceImpl implements FileService {
 
 
     private static final String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm");
     LocalDateTime now = LocalDateTime.now();
-    String fileName = "modifiedFile"+dtf.format(now)+"xlsx";
+    String fileName = "modifiedFile" + dtf.format(now) + ".xlsx";
+
     @Override
-    public FileData uploadFile(MultipartFile userFile) throws IOException {
+    public MultipartFile uploadFile(MultipartFile userFile) throws IOException {
         try {
             if (TYPE.equals(userFile.getContentType())) {
                 String fileName = StringUtils.cleanPath(userFile.getOriginalFilename());
                 FileData FileData = new FileData(fileName, userFile.getContentType(), userFile.getBytes());
-                return FileData;
-            }
-            else{
+                return userFile;
+            } else {
                 throw new CustomException("File type is not supported");
             }
         } catch (Exception uploadException) {
@@ -50,9 +50,6 @@ public class FileServiceImpl implements FileService {
     @Override
     public MultipartFile modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException {
         String message = " ";
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-        LocalDateTime now = LocalDateTime.now();
-        String fileName = dtf.format(now)+"_"+"modifiedFile.xlsx";
         try {
 
             InputStream is = userFile.getInputStream();
@@ -65,60 +62,91 @@ public class FileServiceImpl implements FileService {
             headerFont.setBold(true);
             CellStyle cellStyle = workbook.createCellStyle();
             cellStyle.setFont(headerFont);
-            int totalRows = sheet.getPhysicalNumberOfRows();
 
 
             //Column heading
             Row rowHeading = sheet.getRow(0);
             int lastCellNumber = rowHeading.getLastCellNum();
             Cell cellHeading = rowHeading.getCell(lastCellNumber);
-            if (cellHeading == null) { //auto increment
+            if (cellHeading == null) {
+
                 cellHeading = rowHeading.createCell(lastCellNumber);
+
             }
             cellHeading.setCellValue("UniqueID");
             cellHeading.setCellStyle(cellStyle);
 
+            //getting the column number of username
+            int userNameColumn = -1;
+            int contactNumberColumn = -1;
+            Row userNameRow = sheet.getRow(0);
+            for (int cn=0; cn<userNameRow.getLastCellNum(); cn++) {
+                Cell c = userNameRow.getCell(cn);
+                if (c == null) {
+                    // Can't be this cell - it's empty
+                    continue;
+                }
+                String text =c.getStringCellValue();
+                if(text.equals("UserName")) {
+                    userNameColumn = cn;
+                   //x break;
+                }else if(text.equals("Contact No")){
+                    contactNumberColumn = cn;
+                    break;
+                }
+            }
+            if (userNameColumn== -1 ||contactNumberColumn==-1 ) {
+                throw new Exception("None of the cells in the first row were Patch");
+            }
+
             //Creating a column
+            int totalRows = sheet.getPhysicalNumberOfRows();
             for (int i = 1; i < totalRows; i++) {
                 Row row = sheet.getRow(i);
                 Cell cell = row.getCell(lastCellNumber);
                 if (cell == null) {
                     cell = row.createCell(lastCellNumber);
-                }
-                else{
+                } else {
                     i++;
                 }
-                Cell name = row.getCell(0);
-                Cell contactNo = row.getCell(2);
+
+                //Filling the column with uniqueID
+                Cell name = row.getCell(userNameColumn);
+                Cell contactNo = row.getCell(contactNumberColumn);
                 String uniqueName = name.toString().substring(0, 2);
-                String uniqueNumber = contactNo.toString().substring(0, 3);
+                double contactNumber = contactNo.getNumericCellValue();
+                int intPart = (int)contactNumber;
+                int uniqueNumber = Integer.parseInt(Integer.toString(intPart).substring(0, 2));
 
                 cell.setCellValue(uniqueName + uniqueNumber);
-            }//Modified + date and time
-            FileOutputStream outputStream = new FileOutputStream("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-            workbook.write(outputStream);;
+            }
+
+            FileOutputStream outputStream = new FileOutputStream("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
+            workbook.write(outputStream);
+
 
         } catch (Exception modificationException) {
             modificationException.printStackTrace();
             throw new CustomException("File cannot be modified");
         }
 
-        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
+        File file = new File("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
         FileInputStream input = new FileInputStream(file);
         MultipartFile multipartFile = new MockMultipartFile("multiPartFile",
                 file.getName(), TYPE, IOUtils.toByteArray(input));
         return multipartFile;
     }
 
-    @Override
-    public FileData sendFile(MultipartFile userFile) throws IOException {
+   /* @Override
+    public ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException {
         //Posting the modified file into the api
-//        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-//        FileInputStream input = new FileInputStream(file);
-//
-//        MultipartFile multipartFile = new MockMultipartFile("file",
-//                file.getName(), TYPE, IOUtils.toByteArray(input));
 
+        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
+        FileInputStream input = new FileInputStream(file);
+        MultipartFile multipartFile = new MockMultipartFile("file",
+               file.getName(), TYPE, IOUtils.toByteArray(input));
+
+        FileSystemResource resource = new FileSystemResource(new File(filePath));
         LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.add("file", userFile.getBytes());
 
@@ -128,11 +156,11 @@ public class FileServiceImpl implements FileService {
         HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(map, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<Object> response = restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, Object.class);
 
-        return new FileData(userFile.getOriginalFilename(), userFile.getContentType(), userFile.getBytes());
+        return response;
     }
-
+*/
 
 }
 
