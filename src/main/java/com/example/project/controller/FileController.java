@@ -46,19 +46,23 @@ public class FileController {
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
 
         String message = "";
-        try {
 
+        try {
             //uploading the file and returning the uploaded file as a multipart file
             MultipartFile userFile = fileService.uploadFile(file);
 
-            //UniqueID column is created for the users
-            fileService.modifyFile(userFile);
+            try {
 
+                //UniqueID column is created for the users
+                fileService.modifyFile(userFile);
+
+            }catch (Exception exception){
+                message = exception.getMessage();
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(message);
+            }
             //sending the modified file to the api
-
             File modifiedFile = new File("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
             FileSystemResource value = new FileSystemResource(modifiedFile);
-
             LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
             map.add("file", value);
 
@@ -66,25 +70,31 @@ public class FileController {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(map, headers);
+            String apiUrl = "http://localhost:8086/api/v1/import-order-excel";
+            ResponseEntity<Object> response = new ResponseEntity<Object>(HttpStatus.NOT_IMPLEMENTED);
 
             try {
 
                 RestTemplate restTemplate = new RestTemplate();
-
-                ResponseEntity<Object> response = restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, Object.class);
+                response = restTemplate.exchange(apiUrl, HttpMethod.POST, requestEntity, Object.class);
                 message = response.getBody().toString();
+
                 //trimming the message from the api
                 message = message.substring(1, message.length() - 1);
-                return ResponseEntity.status(HttpStatus.OK).body(message);
+                    return ResponseEntity.status(HttpStatus.OK).body(message);
 
             } catch (Exception e) {
-                //Exceptions from the api
-                e.printStackTrace();
-                message = e.getMessage();
-                return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(message);
+                HttpStatus statusCode = response.getStatusCode();
+
+                if(statusCode.isError()){
+                    message = "Service is down";
+                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(message);
+                }
+                    message = e.getMessage();
+                    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(message);
             }
-        } catch (CustomException | InvalidFormatException e) {
-            //file format is not supported
+        } catch (CustomException e) {
+
             message = e.getMessage();
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(message);
         }

@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
                 throw new CustomException("File type is not supported");
             }
         } catch (Exception uploadException) {
-            throw new CustomException("File type is not supported");
+            throw uploadException ;
         }
     }
 
@@ -56,6 +56,10 @@ public class FileServiceImpl implements FileService {
 
             Workbook workbook = WorkbookFactory.create(is);
             Sheet sheet = workbook.getSheetAt(0);
+
+            if(sheet.getPhysicalNumberOfRows() == 0){
+                throw new Exception("File is empty");
+            }
 
             //setting the font for new column
             Font headerFont = workbook.createFont();
@@ -96,7 +100,7 @@ public class FileServiceImpl implements FileService {
                 }
             }
             if (userNameColumn== -1 ||contactNumberColumn==-1 ) {
-                throw new Exception("None of the cells in the first row were Patch");
+                throw new Exception("None of the cells in the first row were UserName or Contact No");
             }
 
             //Creating a column
@@ -116,7 +120,7 @@ public class FileServiceImpl implements FileService {
                 String uniqueName = name.toString().substring(0, 2);
                 double contactNumber = contactNo.getNumericCellValue();
                 int intPart = (int)contactNumber;
-                int uniqueNumber = Integer.parseInt(Integer.toString(intPart).substring(0, 2));
+                int uniqueNumber = Integer.parseInt(Integer.toString(intPart));
 
                 cell.setCellValue(uniqueName + uniqueNumber);
             }
@@ -127,7 +131,7 @@ public class FileServiceImpl implements FileService {
 
         } catch (Exception modificationException) {
             modificationException.printStackTrace();
-            throw new CustomException("File cannot be modified");
+            throw new CustomException("File cannot be modified: " + modificationException.getMessage());
         }
 
         File file = new File("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
@@ -136,6 +140,8 @@ public class FileServiceImpl implements FileService {
                 file.getName(), TYPE, IOUtils.toByteArray(input));
         return multipartFile;
     }
+
+
 
    /* @Override
     public ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException {

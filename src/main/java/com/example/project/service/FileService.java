@@ -19,4 +19,5 @@ public interface FileService {
     MultipartFile modifyFile(MultipartFile userFile) throws IOException, InvalidFormatException;
 
    // ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException;
+
 }
