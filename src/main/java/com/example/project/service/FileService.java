@@ -20,4 +20,5 @@ public interface FileService {
 
    // ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException;
 
+   // String retrievePassword(String userName);
 }

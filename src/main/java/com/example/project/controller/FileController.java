@@ -18,9 +18,12 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +33,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 
@@ -100,6 +105,34 @@ public class FileController {
         }
     }
 
+  @GetMapping("/users/{username}")
+  public ResponseEntity<String> retrievePassword(@PathVariable("username") String userName){
+        String message = "";
+      HttpHeaders headers = new HttpHeaders();
+      headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+      HttpEntity<?> entity = new HttpEntity<>(headers);
+      String url = "http://localhost:8086/api/v1/{username}";
 
+      String urlTemplate = UriComponentsBuilder.fromHttpUrl(url).queryParam("username","{username}").encode().toUriString();
+      Map<String, String> params = new HashMap<>();
+      params.put("username",userName);
+      ResponseEntity<String> response = new ResponseEntity<String>(HttpStatus.NOT_IMPLEMENTED);
+
+      try{
+            RestTemplate restTemplate = new RestTemplate();
+            response = restTemplate.exchange(urlTemplate,HttpMethod.GET,entity,String.class,params);
+            message = response.getBody();
+        return ResponseEntity.status(HttpStatus.OK).body(message);
+        }catch (CustomException e){
+          HttpStatus statusCode = response.getStatusCode();
+
+          if(statusCode.isError()){
+              message = "Service is down";
+              return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(message);
+          }
+          message = e.getMessage();
+          return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+      }
+  }
 }
 

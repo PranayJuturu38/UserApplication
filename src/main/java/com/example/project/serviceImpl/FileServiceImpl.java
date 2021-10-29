@@ -8,6 +8,7 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.mock.web.MockMultipartFile;
@@ -26,7 +27,6 @@ import java.util.Date;
 @Service
 public class FileServiceImpl implements FileService {
 
-
     private static final String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm");
     LocalDateTime now = LocalDateTime.now();
@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
                 throw new CustomException("File type is not supported");
             }
         } catch (Exception uploadException) {
-            throw uploadException ;
+            throw uploadException;
         }
     }
 
@@ -57,7 +57,7 @@ public class FileServiceImpl implements FileService {
             Workbook workbook = WorkbookFactory.create(is);
             Sheet sheet = workbook.getSheetAt(0);
 
-            if(sheet.getPhysicalNumberOfRows() == 0){
+            if (sheet.getPhysicalNumberOfRows() == 0) {
                 throw new Exception("File is empty");
             }
 
@@ -84,22 +84,22 @@ public class FileServiceImpl implements FileService {
             int userNameColumn = -1;
             int contactNumberColumn = -1;
             Row userNameRow = sheet.getRow(0);
-            for (int cn=0; cn<userNameRow.getLastCellNum(); cn++) {
+            for (int cn = 0; cn < userNameRow.getLastCellNum(); cn++) {
                 Cell c = userNameRow.getCell(cn);
                 if (c == null) {
                     // Can't be this cell - it's empty
                     continue;
                 }
-                String text =c.getStringCellValue();
-                if(text.equals("UserName")) {
+                String text = c.getStringCellValue();
+                if (text.equals("UserName")) {
                     userNameColumn = cn;
-                   //x break;
-                }else if(text.equals("Contact No")){
+                    //x break;
+                } else if (text.equals("Contact No")) {
                     contactNumberColumn = cn;
                     break;
                 }
             }
-            if (userNameColumn== -1 ||contactNumberColumn==-1 ) {
+            if (userNameColumn == -1 || contactNumberColumn == -1) {
                 throw new Exception("None of the cells in the first row were UserName or Contact No");
             }
 
@@ -119,13 +119,13 @@ public class FileServiceImpl implements FileService {
                 Cell contactNo = row.getCell(contactNumberColumn);
                 String uniqueName = name.toString().substring(0, 2);
                 double contactNumber = contactNo.getNumericCellValue();
-                int intPart = (int)contactNumber;
+                int intPart = (int) contactNumber;
                 int uniqueNumber = Integer.parseInt(Integer.toString(intPart));
 
                 cell.setCellValue(uniqueName + uniqueNumber);
             }
 
-            FileOutputStream outputStream = new FileOutputStream("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
+            FileOutputStream outputStream = new FileOutputStream("C:/Users/Dev/Documents/project/modifiedFiles/" + fileName);
             workbook.write(outputStream);
 
 
@@ -134,39 +134,27 @@ public class FileServiceImpl implements FileService {
             throw new CustomException("File cannot be modified: " + modificationException.getMessage());
         }
 
-        File file = new File("C:/Users/Dev/Documents/project/modifiedFiles/"+fileName);
+        File file = new File("C:/Users/Dev/Documents/project/modifiedFiles/" + fileName);
         FileInputStream input = new FileInputStream(file);
         MultipartFile multipartFile = new MockMultipartFile("multiPartFile",
                 file.getName(), TYPE, IOUtils.toByteArray(input));
         return multipartFile;
     }
 
+    /*@Override
+    public String retrievePassword(String userName) {
+        try {
+            String password = userRepository.retrievePassword(userName);
+            return password;
 
-
-   /* @Override
-    public ResponseEntity<Object> sendFile(MultipartFile userFile) throws IOException {
-        //Posting the modified file into the api
-
-        File file = new File("C:/Users/Dev/Documents/Kpi Stuff/main/modifiedFile.xlsx");
-        FileInputStream input = new FileInputStream(file);
-        MultipartFile multipartFile = new MockMultipartFile("file",
-               file.getName(), TYPE, IOUtils.toByteArray(input));
-
-        FileSystemResource resource = new FileSystemResource(new File(filePath));
-        LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
-        map.add("file", userFile.getBytes());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(map, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Object> response = restTemplate.exchange("http://localhost:8086/api/v1/import-order-excel", HttpMethod.POST, requestEntity, Object.class);
-
-        return response;
-    }
-*/
-
+        } catch (Exception e) {
+             throw new CustomException("User not found");
+        }
+    }*/
 }
+
+
+
+
+
 
