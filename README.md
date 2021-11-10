@@ -1,21 +1,21 @@
-# Excel REST Service 
+#Excel REST Service
 
 
-### Built With
+###Built With
 
 
-* Java 8     
-* SpringBoot v2.5.5        
-* Maven      
-* Apache POI  v3.15
+*Java 8     
+*SpringBoot v2.5.5        
+*Maven      
+*Apache POI  v3.15
 
 
-### Description
+###Description
 
 This Rest service accepts only Excel files which contain the details of a user.
 RestTemplate is used to make POST and GET requests to an external api.
 
-## Getting Started
+##Getting Started
 ***
 These are the steps to be followed to run the application locally
 
@@ -31,10 +31,22 @@ Few IDEs that can be used are
 2.Intellij
 3.Visual Studio Code
 ````
-
-### Further Steps
+3. Create a database to store the details of the user using mysql command line
+````
+create database users_db;
+````
+###Running the Application
+1. Navigate to the folder that contains the application and run the following command to build your app.
+````
+mvn clean install
+````
+2. Run the application using the command
+````
+mvn spring-boot:run
+````
+###Further Steps
 ***
-#### Uploading File
+####Uploading File
 The following steps will help in running the program and upload a file.
 
 1.Check the port number in the applications.properties file available in resources folder
@@ -74,7 +86,7 @@ message= File contains same values
 message=Service is down
 ````
 ***
-#### Retrieving password
+####Retrieving password
 The following steps will allow you to retrieve the password of a user using userName
 
 1.Once the database it updated with the values,hit the endpoint `/users/{userName}`
@@ -91,13 +103,13 @@ Password for pr123456778 is *********
 message=User does not exist
 ````
 
-#### Apis 
+####Apis 
 ````
 1. /upload
 2. /users/{username}
 ````
 
-###### 1.Upload Api
+######1.Upload Api
 The upload api accepts only Excel files.
 
 Firstly, the format of the file is checked when it is uploaded. If the file is not of Excel format, an exception is thrown stating that the "file type is not supported".
@@ -113,7 +125,7 @@ Unique ID : pr1234567789
 ````
 This modified file is sent to an external api which stores the user details in the database.
 
-###### 2.Users/{userName} Api
+######2.Users/{userName} Api
 This api takes userName as parameter and returns the password for that user.
 
 The userName is verified if it exists in the database or not, if it is present in the database password will be returned.
